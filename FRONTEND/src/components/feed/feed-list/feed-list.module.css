@@ -29,6 +29,7 @@
   height: 100%;
   margin: 10px auto 150px; /* 상 / 좌우 / 하 */
   box-sizing: border-box;
+  aspect-ratio: 1 / 1;
   padding-bottom: 100px; /* 네비게이션 바 공간 확보 */
 }
 
