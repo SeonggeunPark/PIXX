@@ -11,15 +11,17 @@ import { BrandListResponse, FavoriteResponse, Feed } from "@/app/types/feed";
 import { useMutation } from "@tanstack/react-query";
 import { toggleFavorite } from "@/app/lib/api/feedApi";
 
-import FloatingButton from "../common/FloatingButton";
-import FeedSelectBar from "./FeedSelectBar";
-import FeedAlbumCreateModal from "./FeedAlbumCreateModal";
-import FeedAlbumAdd from "./FeedAlbumAdd";
-import SortDropdown, { OptionType } from "../common/SortDropdown";
+import FloatingButton from "../../common/FloatingButton";
+import FeedSelectBar from "../FeedSelectBar";
+import FeedAlbumCreateModal from "../FeedAlbumCreateModal";
+import FeedAlbumAdd from "../FeedAlbumAdd";
+import SortDropdown, { OptionType } from "../../common/SortDropdown";
 import Image from "next/image";
 import styles from "./feed-list.module.css";
-import FeedBrandList from "./FeedBrandList";
-import AlertModal from "../common/AlertModal";
+import FeedBrandList from "../FeedBrandList";
+import AlertModal from "../../common/AlertModal";
+
+import Head from "next/head";
 
 const feedSortOptions: OptionType<"recent" | "oldest" | "brand">[] = [
   { value: "recent", label: "최신순" },
@@ -439,159 +441,176 @@ export default function FeedList() {
   // ✅ 날짜 정렬 렌더링
   const feedData = data as InfiniteData<Feed[]>;
 
+  const firstFeed = feedData?.pages?.[0]?.[0];
+  const thumbnailUrl = firstFeed?.feedThumbnailImgUrl;
+
   return (
-    <div className={styles.wrapper}>
-      {/* 정렬 */}
-      <div className={styles.selectWrapper}>
-        <SortDropdown value={sortType} onChange={handleSortChange} options={feedSortOptions} />
-      </div>
-      <div className={styles["feed-grid-wrapper"]}>
-        <div className={styles["feed-grid"]}>
-          {feedData?.pages.map((page) =>
-            page.map((feed: Feed) => {
-              // Stagger Dela 애니메이션(하나씩 떠오르는 효과)
-              // {feedData?.pages.map((page, pageIndex) =>
-              // page.map((feed: Feed, feedIndex: number) => {
-              // const pageSize = 8;
-              // const globalIndex = pageIndex * pageSize + feedIndex;
-              // const delay = globalIndex * 0.15; // 하나씩 뜨게 하는 거
-              return (
-                <div
-                  key={feed.feedId}
-                  // className={styles["feed-item"]}
-                  className={`${styles["feed-item"]} ${styles.slideUp}`}
-                  // style={{ animationDelay: `${delay}s` }} // 하나씩 뜨게 하는 거
-                  onClick={() => handleFeedClick(feed.feedId)}
-                  onTouchStart={handlePressStart} // 모바일 longPress
-                  onTouchEnd={handlePressEnd} // 모바일 longPress
-                  onTouchCancel={handlePressEnd} // 모바일 longPress
-                  onMouseDown={handlePressStart} // 웹 longPress
-                  onMouseUp={handlePressEnd} // 웹 longPress
-                  onMouseLeave={handlePressEnd} // 웹 longPress
-                >
-                  {feed.feedThumbnailImgUrl ? (
-                    //eslint-disable-next-line @next/next/no-img-element
-                    <Image
-                      // src={"/dummy-feed-thumbnail.png"}
-                      src={feed.feedThumbnailImgUrl || "/pixx-logo-dummy.png"}
-                      alt={`Feed ${feed.feedId}`}
-                      fill
-                      className={styles.feedImage}
-                      // priority={pageIndex === 0 && feedIndex < 6} // 처음 6개는 priority 사용할거면 위에서 pageIndex,feedIndex  넘겨받아야함
-                      onLoad={() => handleImageLoad(feed.feedId)}
-                      onError={() => handleImageError(feed.feedId)}
-                    />
-                  ) : (
-                    <div className={styles.imageError}>이미지 없음</div>
-                  )}
-
-                  {/*  즐겨찾기 토글 버튼 */}
+    <>
+      {thumbnailUrl && (
+        <Head>
+          <link
+            rel="preload"
+            as="image"
+            href={`/api/image-proxy?url=${encodeURIComponent(thumbnailUrl)}`}
+            type="image/avif"
+          />
+        </Head>
+      )}
+      <div className={styles.wrapper}>
+        {/* 정렬 */}
+        <div className={styles.selectWrapper}>
+          <SortDropdown value={sortType} onChange={handleSortChange} options={feedSortOptions} />
+        </div>
+        <div className={styles["feed-grid-wrapper"]}>
+          <div className={styles["feed-grid"]}>
+            {/* {feedData?.pages.map((page) => */}
+            {/* page.map((feed: Feed) => { */}
+            {/* // Stagger Dela 애니메이션(하나씩 떠오르는 효과) */}
+            {feedData?.pages.map((page, pageIndex) =>
+              page.map((feed: Feed, feedIndex: number) => {
+                // const pageSize = 8;
+                // const globalIndex = pageIndex * pageSize + feedIndex;
+                // const delay = globalIndex * 0.15; // 하나씩 뜨게 하는 거
+                return (
                   <div
-                    className={styles.favoriteIcon}
-                    onClick={(e) => {
-                      e.stopPropagation(); // 상세 페이지 이동 방지
-                      toggleFavoriteMutation(feed.feedId);
-                    }}
+                    key={feed.feedId}
+                    // className={styles["feed-item"]}
+                    className={`${styles["feed-item"]} ${styles.slideUp}`}
+                    // style={{ animationDelay: `${delay}s` }} // 하나씩 뜨게 하는 거
+                    onClick={() => handleFeedClick(feed.feedId)}
+                    onTouchStart={handlePressStart} // 모바일 longPress
+                    onTouchEnd={handlePressEnd} // 모바일 longPress
+                    onTouchCancel={handlePressEnd} // 모바일 longPress
+                    onMouseDown={handlePressStart} // 웹 longPress
+                    onMouseUp={handlePressEnd} // 웹 longPress
+                    onMouseLeave={handlePressEnd} // 웹 longPress
                   >
-                    <Image
-                      src={
-                        favorite[feed.feedId] ? "/icons/icon-star-fill-yellow.png" : "/icons/icon-star-empty-yellow.png"
-                      }
-                      alt="즐겨찾기"
-                      width={32}
-                      height={32}
-                    />
-                  </div>
-                  {/* 선택된 피드 약간 어둡게 처리 */}
-                  {mode === "select" && selectedFeedIds.includes(feed.feedId) && (
-                    <div className={styles.selectedOverlay}></div>
-                  )}
-
-                  {/* 로딩 표시 */}
-                  {!imageLoaded[feed.feedId] && !imageErrors[feed.feedId] && (
-                    <div className={styles.imageLoading}>로딩중...</div>
-                  )}
-
-                  {/* 에러 표시 및 재시도 버튼 */}
-                  {imageErrors[feed.feedId] && (
-                    <div className={styles.imageError}>
-                      <p>이미지 로드 실패</p>
-                      <button className={styles.retryButton} onClick={(e) => handleRetryRequest(feed.feedId, e)}>
-                        다시 시도
-                      </button>
-                    </div>
-                  )}
-
-                  {/* 선택 모드일 때만 체크 아이콘 렌더링 */}
-                  {mode === "select" && (
-                    <div className={styles.checkIcon}>
+                    {feed.feedThumbnailImgUrl ? (
+                      //eslint-disable-next-line @next/next/no-img-element
+                      <Image
+                        // src={"/dummy-feed-thumbnail.png"}
+                        // src={feed.feedThumbnailImgUrl || "/pixx-logo-dummy.png"}
+                        src={`/api/image-proxy?url=${encodeURIComponent(feed.feedThumbnailImgUrl)}`}
+                        alt={`Feed ${feed.feedId}`}
+                        width={100}
+                        height={100}
+                        sizes="(max-width: 480px) 100vw"
+                        quality={50}
+                        className={styles.feedImage}
+                        priority={pageIndex === 0 && feedIndex < 2} // 처음 2개는 priority 사용할거면 위에서 pageIndex,feedIndex  넘겨받아야함
+                        onLoad={() => handleImageLoad(feed.feedId)}
+                        onError={() => handleImageError(feed.feedId)}
+                      />
+                    ) : (
+                      <div className={styles.imageError}>이미지 없음</div>
+                    )}
+                    {/*  즐겨찾기 토글 버튼 */}
+                    <div
+                      className={styles.favoriteIcon}
+                      onClick={(e) => {
+                        e.stopPropagation(); // 상세 페이지 이동 방지
+                        toggleFavoriteMutation(feed.feedId);
+                      }}
+                    >
                       <Image
                         src={
-                          selectedFeedIds.includes(feed.feedId)
-                            ? "/icons/icon-checked-purple.png"
-                            : "/icons/icon-unchecked-purple.png"
+                          favorite[feed.feedId]
+                            ? "/icons/icon-star-fill-yellow.png"
+                            : "/icons/icon-star-empty-yellow.png"
                         }
-                        alt="선택 여부"
-                        width={36}
-                        height={39}
+                        alt="즐겨찾기"
+                        width={32}
+                        height={32}
                       />
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
+                    {/* 선택된 피드 약간 어둡게 처리 */}
+                    {mode === "select" && selectedFeedIds.includes(feed.feedId) && (
+                      <div className={styles.selectedOverlay}></div>
+                    )}
+                    {/* 로딩 표시 */}
+                    {!imageLoaded[feed.feedId] && !imageErrors[feed.feedId] && (
+                      <div className={styles.imageLoading}>로딩중...</div>
+                    )}
+                    {/* 에러 표시 및 재시도 버튼 */}
+                    {imageErrors[feed.feedId] && (
+                      <div className={styles.imageError}>
+                        <p>이미지 로드 실패</p>
+                        <button className={styles.retryButton} onClick={(e) => handleRetryRequest(feed.feedId, e)}>
+                          다시 시도
+                        </button>
+                      </div>
+                    )}
+                    {/* 선택 모드일 때만 체크 아이콘 렌더링 */}
+                    {mode === "select" && (
+                      <div className={styles.checkIcon}>
+                        <Image
+                          src={
+                            selectedFeedIds.includes(feed.feedId)
+                              ? "/icons/icon-checked-purple.png"
+                              : "/icons/icon-unchecked-purple.png"
+                          }
+                          alt="선택 여부"
+                          width={36}
+                          height={39}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* 감시용 div: 마지막에 스크롤 도달하면 다음 페이지 불러오기 */}
+          <div ref={observerRef} style={{ height: "1px" }} />
+
+          {/* 추가 로딩 중이면 표시 */}
+          {isFetchingNextPage && <div>추가 로딩 중...</div>}
         </div>
+        {/* 플로팅 버튼 추가 */}
+        <FloatingButton
+          mode={mode}
+          onClick={() => {
+            if (mode === "default") {
+              setMode("select"); // Create 누르면 select 모드로
+            } else {
+              setMode("default"); // Cancel 누르면 다시 default 모드로
+              setSelectedFeedIds([]); // 선택한 피드 초기화
+            }
+          }}
+        />
 
-        {/* 감시용 div: 마지막에 스크롤 도달하면 다음 페이지 불러오기 */}
-        <div ref={observerRef} style={{ height: "1px" }} />
+        {/* 앨범 생성 및 앨범 피드 추가 */}
+        {isAlbumAddOpen && (
+          <FeedAlbumAdd
+            isOpen={isAlbumAddOpen}
+            onClose={handleCloseAlbumAddModal}
+            onSelect={handleAlbumSelect}
+            onCreateNewAlbum={() => setIsAlbumCreateOpen(true)}
+          />
+        )}
 
-        {/* 추가 로딩 중이면 표시 */}
-        {isFetchingNextPage && <div>추가 로딩 중...</div>}
+        {isAlbumCreateOpen && (
+          <FeedAlbumCreateModal
+            isOpen={isAlbumCreateOpen}
+            onClose={() => setIsAlbumCreateOpen(false)}
+            albumTitle={albumTitle}
+            setAlbumTitle={setAlbumTitle}
+            onSubmit={handleCreateAlbum}
+          />
+        )}
+
+        {/* 선택용 Navbar 렌더링 (선택 모드일 때만 노출) */}
+        {mode === "select" && (
+          <FeedSelectBar
+            onAdd={handleAddToAlbum}
+            // onCreate={() => setIsModalOpen(true)}
+            onDelete={handleDeletePhotos}
+          />
+        )}
+        {/* 알람 모달 */}
+        <AlertModal isOpen={alertModal.isOpen} message={alertModal.message} onClose={closeAlert} />
       </div>
-      {/* 플로팅 버튼 추가 */}
-      <FloatingButton
-        mode={mode}
-        onClick={() => {
-          if (mode === "default") {
-            setMode("select"); // Create 누르면 select 모드로
-          } else {
-            setMode("default"); // Cancel 누르면 다시 default 모드로
-            setSelectedFeedIds([]); // 선택한 피드 초기화
-          }
-        }}
-      />
-
-      {/* 앨범 생성 및 앨범 피드 추가 */}
-      {isAlbumAddOpen && (
-        <FeedAlbumAdd
-          isOpen={isAlbumAddOpen}
-          onClose={handleCloseAlbumAddModal}
-          onSelect={handleAlbumSelect}
-          onCreateNewAlbum={() => setIsAlbumCreateOpen(true)}
-        />
-      )}
-
-      {isAlbumCreateOpen && (
-        <FeedAlbumCreateModal
-          isOpen={isAlbumCreateOpen}
-          onClose={() => setIsAlbumCreateOpen(false)}
-          albumTitle={albumTitle}
-          setAlbumTitle={setAlbumTitle}
-          onSubmit={handleCreateAlbum}
-        />
-      )}
-
-      {/* 선택용 Navbar 렌더링 (선택 모드일 때만 노출) */}
-      {mode === "select" && (
-        <FeedSelectBar
-          onAdd={handleAddToAlbum}
-          // onCreate={() => setIsModalOpen(true)}
-          onDelete={handleDeletePhotos}
-        />
-      )}
-      {/* 알람 모달 */}
-      <AlertModal isOpen={alertModal.isOpen} message={alertModal.message} onClose={closeAlert} />
-    </div>
+    </>
   );
 }
