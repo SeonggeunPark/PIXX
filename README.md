@@ -1,6 +1,5 @@
 # PIXX
 ![PIXX_main](/uploads/a16ab69d5690f9c1757cc4b7f1378aee/PIXX_main.png)
-### PIXX 링크 : https://www.film-moa.com
 ## 목차
 1. [프로젝트 콘셉트](#프로젝트-콘셉트)
 2. [핵심 기능](#핵심-기능)
